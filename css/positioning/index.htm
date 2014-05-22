@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+    <title>CSS positioning: clientLeft, offsetLeft, getBoundingClientRect() online demo</title>
+    <link rel="stylesheet" href="positioning.css" />
+    <script type="text/javascript" src="positioning.js"></script>
+</head>
+
+<body onload="onload(); reload()">
+
+<div class="infobox">
+    <strong>getBoundingClientRect</strong><br>
+    It's the box as seen in Firebug when inspecting the element.<br>
+    Numbers returned depend on the scroll of the element and all parent elements.<br><br>
+    If right/bottom is negative, then object is out of viewport.<br>
+    If left/top is negative, then object is partially out of viewport.
+</div>
+
+<div class="infobox">
+    <strong>clientLeft</strong><br>
+    In left-to-right environments, it's equal to border-left-width (otherwise it also includes scrollbar width)<br>
+    <strong>Note though that for inline elements, clientLeft is always zero</strong>.
+</div>
+
+<div class="infobox">
+    <strong>offsetLeft</strong><br>
+    Left position with respect to offsetParent (nearest ancestor with position:absolute or relative).
+</div>
+
+<button onclick="reload()">Change parent's css</button>
+
+Click the button and/or scroll the page / the div
+
+<div id="container">
+    <div class="parent" id="parent2">
+        loading...
+        <div class="child" id="child2">
+            <div id="divbox2" class="divbox">block div</div>
+            <div id="divbox2Inline" class="divbox" style="display:inline;">inline div</div>
+            <div id="childInfo"></div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
