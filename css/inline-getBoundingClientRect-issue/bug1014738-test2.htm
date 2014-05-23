@@ -1,0 +1,210 @@
+
+<!doctype html>
+<html>
+<head>
+    <title>mozilla bug 1014738 investigation - Non-zero difference of getBoundingClientRect().top between parent and its inline child</title>
+</head>
+<body>
+    <h1>mozilla bug 1014738 investigation - Non-zero difference of getBoundingClientRect().top between parent and its inline child</h1>
+
+    <p>Click any of the buttons, it will change settings and automatically re-calculate everything.<br>
+    To quickly increase font-size, focus the button and keep pressing ENTER on keyboard
+    </p>
+
+    <code>body { line-height: </code>
+        <button onclick="lineHeight('normal')">normal</button>
+        <button onclick="lineHeight(1.2)">1.2</button>
+        <button onclick="lineHeight(1.25)">1.25</button>
+        <button onclick="lineHeight(1.3)">1.3</button>
+        <button onclick="lineHeight(1.1)">1.1</button>
+    <code>}</code><br><br>
+    <code>body { font-family: </code>
+    <span id="buttons"></span>
+    <br><br>
+    <code>body { font-size:</code>
+        <button onclick="changeSize(1)">font++</button>
+        <button onclick="changeSize(-1)">font--</button>
+    <code>}</code>
+    <br><br>
+
+
+    <p id="settings" style="background-color:#0cf; padding:10px; border:2px solid black"></p>
+
+    <div      style="display:block;">
+        <span style="display:block;">
+            Lorem ipsum
+        </span>
+    </div>
+
+    <div      style="display:block;">
+        <span style="display:inline-block;">
+            Lorem ipsum
+        </span>
+    </div>
+
+    <div      style="display:block;">
+        <span style="display:inline;">
+            Lorem ipsum
+        </span>
+    </div>
+
+    <div      style="display:inline-block;">
+        <span style="display:inline;">
+            Lorem ipsum
+        </span>
+    </div>
+
+    <button style="display:block; margin:10px auto;" onclick="autoTest(1, 100)">start autotest (current line-height, all fonts, all sizes)</button>
+    <p id="errorOutput" style="background-color:#000; color: #fc0;"></p>
+
+        <p>Summary:</p>
+    <ul>
+        <li>create <code>&lt;div&gt;&lt;span&gt;&lt;/span&gt;&lt;/div&gt;</code></li>
+        <li>compute <code>span.getBoundingClientRect().top - div.getBoundingClientRect().top</code></li>
+        <li>When parent and child are both block/inline-block, the difference is 0 regardless of the line-height, font family, font size</li>
+        <li>When child is inline and parent block/inline-block, <strong>the difference may not be 0</strong>
+            <ul>
+                <li>It is <em>almost certainly</em> non-zero when <code>line-height</code> of the child is not equal <code>normal</code>, in all browsers</li>
+                <li>In IE11, it seems to be <em>always 0</em> when <code>line-height</code> is <code>normal</code></li>
+                <li>In Firefox and Chrome, for some fonts and certain font sizes, the difference <strong>may be non-zero even despite <code>line-height: normal</code></strong></li>
+            </ul>
+    </ul>
+
+    <p>Description:</p>
+    <ul>
+        <li>assuming <code>body { line-height:normal }</code> which is the default<br>
+            <em>Note 'normal' should read 'auto' as it means 'depending on the font family and font-size' - see <a href="http://meyerweb.com/eric/thoughts/2008/05/06/line-height-abnormal/">line-height-abnormal by Eric Meyer</a></em></li>
+        <li>create <code>&lt;div&gt;&lt;span&gt;&lt;/span&gt;&lt;/div&gt;</code> where child has <code>display:inline</code> and parent has <code>display:block</code> or <code>inline-block</code></li>
+        <li>compute <code>span.getBoundingClientRect().top - div.getBoundingClientRect().top</code></li>
+    </ul>
+
+    <p>Observations:</p>
+    <ul>
+        <li>It seems, the difference is (tested on Windows 7):
+            <ul>
+                <li>Always <strong>0 in IE11 regardless of the font</strong> (tested on seven fonts listed below)</li>
+                <li>Also <strong>0 in Chrome, Firefox for certain fonts (verdana, tahoma, courier new, georgia, garamond)</strong> on all font sizes</li>
+                <li><strong>non-zero in Chrome, Firefox for certain other fonts (arial, times new roman) above some font-size threshold</strong> (threshold depends on the font and the browser)</li>
+            </ul>
+        </li>
+        <li>Browser zoom level doesn't seem to have an effect on the output of the tests (other than changing threshold in Chrome)</li>
+    </ul>
+</body>
+
+<script>
+
+var fonts = [
+    'times new roman',
+    'arial',
+    'tahoma',
+    'verdana',
+    'courier new',
+    'georgia',
+    'garamond'
+];
+
+var fontSizePx = 16;
+var elems = [].slice.apply(document.querySelectorAll('div'));
+
+function lineHeight(which) {
+    document.body.style.lineHeight = which;
+    measure();
+}
+function setFont(which) {
+    document.body.style.fontFamily = which;
+    measure();
+}
+function changeSize(delta) {
+    fontSizePx += delta;
+    document.body.style.fontSize = fontSizePx + "px";
+    measure();
+}
+
+function elemInfo(elem) {
+    var val = elem.getBoundingClientRect().top;
+    return {
+        text: getComputedStyle(elem).display + ": top=" + val,
+        val: val
+    };
+}
+
+function measure(bIsAutoTest) {
+    bIsAutoTest = bIsAutoTest || false;
+    if(!bIsAutoTest) {
+        var s = document.body.style;
+        document.getElementById('settings').innerHTML = "Current state: " + s.fontSize + " " + s.fontFamily + "; line-height: " + s.lineHeight;
+    }
+    var retVal = true;
+    for (var i=0; i<elems.length; i++) {
+        var $0 = elems[i];
+
+        // take div and span and measure difference of getBoundingClientRect().top
+        var div  = elemInfo($0);
+        var span = elemInfo($0.firstElementChild);
+
+        var diff = span.val - div.val;
+        var ok = (diff == 0) ;
+        if(!bIsAutoTest) {
+            var text = "discrepancy: " + diff + " [div: " + div.text + ", span: " + span.text + "]";
+            $0.firstElementChild.innerHTML = text;
+            $0.style.cssText += ok ? "background-color:#afa" : "background-color:#faa";
+        }
+
+        retVal = retVal && ok;
+    }
+    return retVal;
+}
+
+function autoTest (min, max) {
+    var output = document.getElementById("errorOutput");
+    output.innerHTML = "Autotest in progress...";
+    setTimeout(function () {
+        var errors = {};
+        for (var j=0; j<fonts.length; j++) {
+            min = min || 1;
+            max = max || 100;
+            var fontName = fonts[j];
+            document.body.style.fontFamily = fontName;
+            for (fontSizePx = min; fontSizePx <= max; fontSizePx++) {
+                document.body.style.fontSize = fontSizePx + "px";
+                var retVal = measure(true);
+                if(!retVal) {
+                    errors[fontName] = errors[fontName] || [];
+                    errors[fontName].push(fontSizePx);
+                }
+            }
+        }
+
+        var header = "Failures (diff > 0) found for the following font-family / font-size (px) combinations:<br><br>";
+        var msg = "";
+        for (var fontName in errors) {
+            msg += (fontName + ":<br>" + errors[fontName].join(",") + "<br>");
+        }
+
+        if (msg) {
+            output.innerHTML = header + msg;
+        } else {
+            output.innerHTML = "No failures!";
+        }
+        reset();
+    }, 500);
+}
+
+function reset() {
+    fontSizePx = 16;
+    document.body.style.fontSize = fontSizePx + "px";
+    document.body.style.lineHeight = "normal";
+    setFont('times new roman');
+}
+
+var buttons = document.getElementById("buttons");
+for (var i=0; i<fonts.length; i++) {
+    var font = fonts[i];
+    buttons.innerHTML += '<button onclick=\'setFont("'+font+'")\'>'+font+'</button>';
+}
+buttons.innerHTML += "<code>}</code>";
+
+reset();
+
+</script>
+</html>
