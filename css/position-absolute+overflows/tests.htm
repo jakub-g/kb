@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+<style>
+.green {
+     margin-left:25px;
+     margin-top:25px;
+     width:166px;
+     height:166px;
+     border:2px solid red;
+     background:rgba(0,128,0,0.5);
+}
+.linen {
+    width:333px;
+    border:2px solid black;
+    background-color:linen;
+}
+.pink {
+    width:300px;
+    height:133px;
+    background-color:#fcf;
+}
+.auto {
+    overflow:auto;
+}
+.scroll {
+    overflow:scroll;
+}
+.abs {
+    position: absolute;
+}
+.stat {
+    position: static;
+}
+
+</style>
+</head>
+<body>
+
+<div class="abs" style="top:25px;">
+<div class="stat auto linen " style="height:50px;">
+<div class="stat auto pink" style="height:auto;"><!-- overflow auto = zero height, overflow scroll some height but not including the abs child-->
+<div class="abs green"></div> <!-- abs child with no abs parents: fully visible regardless of any ascendant's overflow property -->
+</div>
+</div>
+</div>
+
+<div class="abs" style="top:250px;">
+<div class="abs auto linen" > <!-- style="height:150px;" -->
+<div class="stat scroll pink">
+<div class="abs green"></div><!-- abs with (abs parent with overflow != visible) => cropped with respect to that parent -->
+</div>
+</div>
+</div>
+
+<div class="abs" style="top:25px; left:400px;">
+<div class="abs auto linen" style="height:150px;">
+<div class="abs scroll pink">
+<div class="abs green"></div>
+</div>
+</div>
+</div>
+
+<div class="abs" style="top:250px; left:400px;">
+<div class="abs auto linen" style="height:150px;">
+<div class="abs scroll pink">
+<div class="stat green"></div>
+</div>
+</div>
+</div>
+
+</body>
+</html>
